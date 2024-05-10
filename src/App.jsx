@@ -5,22 +5,19 @@ import { StreamCall, StreamVideo, StreamVideoClient, StreamTheme, SpeakerLayout,
 import { MyVideoUI } from './MyVideoUI'
 import '@stream-io/video-react-sdk/dist/css/styles.css'
 
-// NOTE: This will generate a new call on every reload
-// Fork this CodeSandbox and set your own CallID if
-// you want to test with multiple users or multiple tabs opened
+
 const callId = '5hzvT4XyCzjB'
 const user_id = '4-LOM'
 const user = { id: user_id }
-
 const apiKey = 'mmhfdzb5evj2'
 const tokenProvider = async () => {
-  const { token } = await fetch(
-    'https://pronto.getstream.io/api/auth/create-token?' +
+  const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
     new URLSearchParams({
       api_key: apiKey,
       user_id: user_id
     })
-  ).then((res) => res.json())
+  )
+  const { token } = await res.json()
   return token
 }
 
@@ -29,28 +26,33 @@ function App() {
   const [call, setCall] = useState()
 
   useEffect(() => {
-    const myClient = new StreamVideoClient({ apiKey, user, tokenProvider })
-    setClient(myClient)
+    const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
+    setClient(_client)
     return () => {
-      myClient.disconnectUser()
+      if (!client) return
+      client.disconnectUser()
       setClient(undefined)
     }
   }, [])
 
   useEffect(() => {
-    if (!client) return
-    const myCall = client.call('default', callId)
-    myCall.join({ create: true }).catch((err) => {
-      console.error(`Failed to join the call`, err)
-    })
+    async function startCall() {
+      if (!client) return
 
-    setCall(myCall)
+      const _call = client.call('default', callId)
+      await _call.camera.disable()
+      await _call.microphone.disable()
+      _call.join({ create: true }).catch((e) => console.error(`Failed to join the call`, e))
+
+      setCall(_call)
+    }
+
+    startCall()
 
     return () => {
-      setCall(undefined);
-      myCall.leave().catch((err) => {
-        console.error(`Failed to leave the call`, err)
-      })
+      if (!call) return
+      _call.leave().catch((err) => console.error(`Failed to leave the call`, err))
+      setCall(undefined)
     }
   }, [client])
 
