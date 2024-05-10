@@ -9,7 +9,6 @@ import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import {
   StreamCall, StreamVideo, StreamVideoClient, StreamTheme, ParticipantView, useCall, useCallStateHooks, SfuModels
 } from '@stream-io/video-react-sdk'
-import { MyVideoUI } from './MyVideoUI'
 import '@stream-io/video-react-sdk/dist/css/styles.css'
 
 
@@ -49,7 +48,7 @@ function App() {
       const _call = client.call('default', callId)
       await _call.camera.disable()
       await _call.microphone.disable()
-      _call.join({ create: true }).catch((e) => console.error(`Failed to join the call`, e))
+      await _call.join({ create: true }).catch((e) => console.error(`Failed to join the call`, e))
 
       setCall(_call)
     }
@@ -58,10 +57,11 @@ function App() {
 
     return () => {
       if (!call) return
-      _call.leave().catch((err) => console.error(`Failed to leave the call`, err))
+      call.leave().catch((err) => console.error(`Failed to leave the call`, err))
       setCall(undefined)
     }
   }, [client])
+
 
   if (!client || !call) return null
 
@@ -72,7 +72,7 @@ function App() {
           <Button onClick={() => window.open('https://github.com/pangrr/meet', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
         </Toolbar>
       </AppBar>
-      <Box sx={{ p: '3rem', overflow: 'scroll' }}>
+      <Box sx={{ p: '1rem', overflow: 'scroll' }}>
         <StreamVideo client={client}>
           <StreamCall call={call}>
             <StreamTheme>
@@ -92,18 +92,18 @@ function SpeakerView() {
   const [participantInSpotlight, ...otherParticipants] = useParticipants()
 
   return (
-    <div className="speaker-view">
+    <div>
       {call && otherParticipants.length > 0 && (
-        <div className="participants-bar">
+        <div style={{}}>
           {otherParticipants.map((participant) => (
-            <div className="participant-tile" key={participant.sessionId}>
+            <div key={participant.sessionId}>
               <ParticipantView participant={participant} />
             </div>
           ))}
         </div>
       )}
 
-      <div className="spotlight">
+      <div>
         {call && participantInSpotlight && (
           <ParticipantView
             participant={participantInSpotlight}
