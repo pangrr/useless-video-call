@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react'
-import { Skeleton, ImageList, ImageListItem, Box, Container, AppBar, Toolbar, Card, CardContent, Typography, CardActions, Button, CardMedia, Collapse } from '@mui/material'
+import { Skeleton, ImageList, ImageListItem, Box, Container, AppBar, Toolbar, Card, CardContent, Typography, CardActions, Button, CardMedia, IconButton } from '@mui/material'
 import GitHubIcon from '@mui/icons-material/GitHub'
-import { StreamCall, StreamVideo, StreamVideoClient, StreamTheme, SpeakerLayout, CallControls } from '@stream-io/video-react-sdk'
+import CallEndIcon from '@mui/icons-material/CallEnd'
+import MicIcon from '@mui/icons-material/Mic'
+import MicOffIcon from '@mui/icons-material/MicOff'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import VideocamOffIcon from '@mui/icons-material/VideocamOff'
+import {
+  StreamCall, StreamVideo, StreamVideoClient, StreamTheme, ParticipantView, useCall, useCallStateHooks, SfuModels
+} from '@stream-io/video-react-sdk'
 import { MyVideoUI } from './MyVideoUI'
 import '@stream-io/video-react-sdk/dist/css/styles.css'
 
 
 const callId = '5hzvT4XyCzjB'
-const user_id = '4-LOM'
-const user = { id: user_id }
+const userId = '4-LOM'
+const user = { id: userId }
 const apiKey = 'mmhfdzb5evj2'
 const tokenProvider = async () => {
   const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
     new URLSearchParams({
       api_key: apiKey,
-      user_id: user_id
+      user_id: userId
     })
   )
   const { token } = await res.json()
@@ -59,35 +66,110 @@ function App() {
   if (!client || !call) return null
 
   return (
-    <StreamVideo client={client}>
-      <StreamTheme>
-        <StreamCall call={call}>
-          <SpeakerLayout />
-          <CallControls />
-        </StreamCall>
-      </StreamTheme>
-    </StreamVideo>
-  );
-
-  return (
-    <>
-      <AppBar color='darkerBackground' enableColorOnDark>
+    <div style={{ position: 'fixed', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <AppBar color='darkerBackground' enableColorOnDark sx={{ position: 'relative' }}>
         <Toolbar variant='dense'>
           <Button onClick={() => window.open('https://github.com/pangrr/meet', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
         </Toolbar>
       </AppBar>
-      <Container maxWidth='xl'>
-        <Box sx={{ pt: 6, maxHeight: '100%' }}>
-          <StreamVideo client={client}>
-            <StreamCall call={call}>
-              <MyVideoUI />
-            </StreamCall>
-          </StreamVideo>
-        </Box>
-      </Container>
-    </>
+      <Box sx={{ p: '3rem', overflow: 'scroll' }}>
+        <StreamVideo client={client}>
+          <StreamCall call={call}>
+            <StreamTheme>
+              <SpeakerView />
+              <Controls />
+            </StreamTheme>
+          </StreamCall>
+        </StreamVideo>
+      </Box>
+    </div>
   )
-
 }
+
+function SpeakerView() {
+  const call = useCall()
+  const { useParticipants } = useCallStateHooks()
+  const [participantInSpotlight, ...otherParticipants] = useParticipants()
+
+  return (
+    <div className="speaker-view">
+      {call && otherParticipants.length > 0 && (
+        <div className="participants-bar">
+          {otherParticipants.map((participant) => (
+            <div className="participant-tile" key={participant.sessionId}>
+              <ParticipantView participant={participant} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="spotlight">
+        {call && participantInSpotlight && (
+          <ParticipantView
+            participant={participantInSpotlight}
+            trackType={
+              hasScreenShare(participantInSpotlight)
+                ? 'screenShareTrack'
+                : 'videoTrack'
+            }
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function hasScreenShare(participant) {
+  participant.publishedTracks.includes(SfuModels.TrackType.SCREEN_SHARE);
+}
+
+function Controls({ onLeave }) {
+  return (
+    <div className="str-video__call-controls">
+      <ToggleCamButton />
+      <ToggleMicButton />
+      <HangupButton onLeave={onLeave} />
+    </div>
+  )
+}
+
+function HangupButton({ reject }) {
+  const call = useCall()
+  return (
+    <IconButton color='error' onClick={() => call?.leave({ reject })}>
+      <CallEndIcon />
+    </IconButton>
+  )
+}
+
+function ToggleMicButton() {
+  const { useMicrophoneState } = useCallStateHooks()
+  const { microphone, isMute } = useMicrophoneState()
+  return (
+    <IconButton onClick={() => microphone.toggle()} color={isMute ? 'error' : 'primary'}>
+      {isMute ? (
+        <MicOffIcon />
+      ) : (
+        <MicIcon />
+      )}
+    </IconButton>
+  )
+}
+
+function ToggleCamButton() {
+  const { useCameraState } = useCallStateHooks();
+  const { camera, isMute } = useCameraState();
+  return (
+    <IconButton onClick={() => camera.toggle()} color={isMute ? 'error' : 'primary'}>
+      {isMute ? (
+        <VideocamOffIcon />
+      ) : (
+        <VideocamIcon />
+      )}
+    </IconButton>
+  );
+};
+
+
 
 export default App
