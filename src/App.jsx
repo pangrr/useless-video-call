@@ -13,7 +13,7 @@ import '@stream-io/video-react-sdk/dist/css/styles.css'
 import './App.css'
 
 const callId = '5hzvT4XyCzjB'
-const userId = 'Ran'
+const userId = "Ran"
 const user = { id: userId }
 const apiKey = 'mmhfdzb5evj2'
 const tokenProvider = async () => {
