@@ -11,6 +11,6 @@ const fullReloadAlways = {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), fullReloadAlways], // alway full reload instead of hot update on code change to prevent phanton users in a chat room after hot update
-  base: '/meet/',
+  base: '/call/',
   assetsInclude: ['**/*.md']
 })
