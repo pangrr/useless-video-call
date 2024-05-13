@@ -1,0 +1,22 @@
+.spotlight .str-video__participant-view {
+	height: 100%;
+	width: auto;
+	aspect-ratio: auto;
+}
+
+.spotlight .str-video__participant-view--no-video {
+	width: 100%;
+}
+
+.participantsBar::-webkit-scrollbar {
+	display: none;
+}
+
+.participantsBar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.otherParticipantView {
+	aspect-ratio: auto;
+}
