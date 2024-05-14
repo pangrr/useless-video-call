@@ -98,6 +98,7 @@ function CallView() {
                 participant={participant}
                 ParticipantViewUI={null}
                 className='otherParticipantView'
+                VideoPlaceholder={VideoPlaceholder}
               />
             </div>
           ))}
@@ -108,6 +109,7 @@ function CallView() {
           <ParticipantView
             participant={participantInSpotlight}
             ParticipantViewUI={null}
+            VideoPlaceholder={VideoPlaceholder}
           />
         )}
       </div>
@@ -165,9 +167,20 @@ function ToggleCamButton() {
 }
 
 const VideoPlaceholder = forwardRef(function ({ participant, style }, ref) {
+  const name = participant.name || participant.userId
+  const initials = name.split(' ').slice(0, 2).map((n) => n[0]).join('')
   return (
-    <div style={{ ...style, width: '100%', height: '100%', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2rem', fontWeight: 'bold' }} ref={ref}>
-      {participant.userId}
+    <div style={{
+      ...style, background: 'var(--str-video__background-color5)', borderRadius: 'inherit', aspectRatio: '4 / 3',
+      height: '100%',
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }} ref={ref}>
+      <div style={{ background: 'var(--str-video__primary-color)', borderRadius: 'var(--str-video__border-radius-circle)', fontSize: '32px', fontWeight: '600', textTransform: 'uppercase', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100px', height: '100px', }}>
+        {initials}
+      </div>
     </div>
   )
 })
