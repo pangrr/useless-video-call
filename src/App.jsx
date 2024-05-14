@@ -108,7 +108,7 @@ function CallView() {
         {call && participantInSpotlight && (
           <ParticipantView
             participant={participantInSpotlight}
-            // ParticipantViewUI={null}
+            ParticipantViewUI={ParticipantViewUI}
             VideoPlaceholder={VideoPlaceholder}
           />
         )}
