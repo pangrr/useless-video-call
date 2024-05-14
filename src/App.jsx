@@ -1,5 +1,5 @@
 import { useEffect, useState, forwardRef } from 'react'
-import { Skeleton, ImageList, ImageListItem, Box, Container, Stack, AppBar, Toolbar, Card, CardContent, Typography, CardActions, Button, CardMedia, IconButton } from '@mui/material'
+import { Stack, AppBar, Toolbar, Button, TextField, IconButton } from '@mui/material'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import MicIcon from '@mui/icons-material/Mic'
@@ -7,63 +7,20 @@ import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import {
-  StreamCall, StreamVideo, StreamVideoClient, StreamTheme, ParticipantView, useCall, useCallStateHooks, SfuModels, SpeakerLayout, DefaultParticipantViewUI, useParticipantViewContext
+  StreamCall, StreamVideo, StreamVideoClient, StreamTheme, ParticipantView, useCall, useCallStateHooks, SfuModels, useParticipantViewContext
 } from '@stream-io/video-react-sdk'
 import '@stream-io/video-react-sdk/dist/css/styles.css'
 import './App.css'
 
 const callId = '5hzvT4XyCzjB'
-const userId = "Ran"
-const user = { id: userId }
 const apiKey = 'mmhfdzb5evj2'
-const tokenProvider = async () => {
-  const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
-    new URLSearchParams({
-      api_key: apiKey,
-      user_id: userId
-    })
-  )
-  const { token } = await res.json()
-  return token
-}
 
 function App() {
   const [client, setClient] = useState()
   const [call, setCall] = useState()
+  const [userId, setUserId] = useState('')
 
-  useEffect(() => {
-    const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
-    setClient(_client)
-    return () => {
-      if (!client) return
-      client.disconnectUser()
-      setClient(undefined)
-    }
-  }, [])
-
-  useEffect(() => {
-    async function startCall() {
-      if (!client) return
-
-      const _call = client.call('default', callId)
-      await _call.camera.disable()
-      await _call.microphone.disable()
-      await _call.join({ create: true }).catch((e) => console.error(`Failed to join the call`, e))
-
-      setCall(_call)
-    }
-
-    startCall()
-
-    return () => {
-      if (!call) return
-      call.leave().catch((err) => console.error(`Failed to leave the call`, err))
-      setCall(undefined)
-    }
-  }, [client])
-
-
-  if (!client || !call) return null
+  useEffect(() => hangup, [])
 
   return (
     <div style={{ position: 'fixed', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
@@ -72,16 +29,60 @@ function App() {
           <Button onClick={() => window.open('https://github.com/pangrr/call', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
         </Toolbar>
       </AppBar>
-      <StreamTheme style={{ width: '100%', height: '100%', }}>
-        <StreamVideo client={client}>
-          <StreamCall call={call}>
-            <CallView />
-          </StreamCall>
-        </StreamVideo>
-      </StreamTheme>
+      {call ?
+        <StreamTheme style={{ width: '100%', height: '100%' }}>
+          <StreamVideo client={client}>
+            <StreamCall call={call}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+                <CallView />
+                <Controls onHangup={hangup} />
+              </div>
+            </StreamCall>
+          </StreamVideo>
+        </StreamTheme>
+        :
+        <Stack style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+          <TextField value={userId} onChange={(e) => setUserId(e.target.value)} style={{ width: '10rem' }} label='Your Name' name='userId' variant='outlined' />
+          <Button disabled={!userId} onClick={startCall} variant='contained' style={{ width: '10rem' }}>start call</Button>
+        </Stack>
+      }
     </div>
   )
+
+  async function startCall() {
+    const user = { id: userId }
+    const tokenProvider = async () => {
+      const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
+        new URLSearchParams({
+          api_key: apiKey,
+          user_id: userId
+        })
+      )
+      const { token } = await res.json()
+      return token
+    }
+    const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
+    setClient(_client)
+
+    const _call = _client.call('default', callId)
+    await _call.camera.disable()
+    await _call.microphone.disable()
+    await _call.join({ create: true }).catch((e) => console.error(`Failed to join the call`, e))
+    setCall(_call)
+  }
+
+  function hangup() {
+    if (call) {
+      call.leave().catch((err) => console.error(`Failed to leave the call`, err))
+      setCall(undefined)
+    }
+    if (client) {
+      client.disconnectUser()
+      setClient(undefined)
+    }
+  }
 }
+
 
 function CallView() {
   const call = useCall()
@@ -89,7 +90,7 @@ function CallView() {
   const [participantInSpotlight, ...otherParticipants] = useParticipants()
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <>
       {call && otherParticipants.length > 0 && (
         <div className='participantsBar' style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '180px', padding: '10px', overflowX: 'scroll', scrollbarWidth: 'none' }}>
           {otherParticipants.map((participant) => (
@@ -113,30 +114,29 @@ function CallView() {
           />
         )}
       </div>
-      <Controls />
-    </div>
+    </ >
   )
 }
 
 
-function Controls({ onLeave }) {
+function Controls({ onHangup }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1.5rem' }}>
       <ToggleCamButton />
       <ToggleMicButton />
-      {/* <HangupButton onLeave={onLeave} /> */}
+      <HangupButton onHangup={onHangup} />
     </div>
   )
 }
 
-function HangupButton({ reject }) {
-  const call = useCall()
+function HangupButton({ onHangup }) {
   return (
-    <IconButton color='error' onClick={() => call?.leave({ reject })}>
+    <IconButton color='error' onClick={onHangup}>
       <CallEndIcon />
     </IconButton>
   )
 }
+
 
 function ToggleMicButton() {
   const { useMicrophoneState } = useCallStateHooks()
