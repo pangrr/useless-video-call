@@ -1,10 +1,10 @@
-.spotlight .str-video__participant-view {
+.str-video__participant-view {
 	height: 100%;
 	width: auto;
 	aspect-ratio: auto;
 }
 
-.spotlight .str-video__participant-view--no-video {
+.str-video__participant-view--no-video {
 	width: 100%;
 }
 

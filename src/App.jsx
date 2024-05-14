@@ -91,12 +91,12 @@ function CallView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       {call && otherParticipants.length > 0 && (
-        <div className='participantsBar' style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '160px', overflowX: 'scroll', scrollbarWidth: 'none' }}>
+        <div className='participantsBar' style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '10px', height: '180px', padding: '10px', overflowX: 'scroll', scrollbarWidth: 'none' }}>
           {otherParticipants.map((participant) => (
-            <div style={{ width: '240px' }} key={participant.sessionId}>
+            <div style={{ width: '240px', height: '100%' }} key={participant.sessionId}>
               <ParticipantView
                 participant={participant}
-                ParticipantViewUI={null}
+                ParticipantViewUI={ParticipantViewUI}
                 className='otherParticipantView'
                 VideoPlaceholder={VideoPlaceholder}
               />
@@ -104,11 +104,11 @@ function CallView() {
           ))}
         </div>
       )}
-      <div className='spotlight' style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '0' }}>
+      <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '0' }}>
         {call && participantInSpotlight && (
           <ParticipantView
             participant={participantInSpotlight}
-            ParticipantViewUI={null}
+            // ParticipantViewUI={null}
             VideoPlaceholder={VideoPlaceholder}
           />
         )}
@@ -170,14 +170,7 @@ const VideoPlaceholder = forwardRef(function ({ participant, style }, ref) {
   const name = participant.name || participant.userId
   const initials = name.split(' ').slice(0, 2).map((n) => n[0]).join('')
   return (
-    <div style={{
-      ...style, background: 'var(--str-video__background-color5)', borderRadius: 'inherit', aspectRatio: '4 / 3',
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }} ref={ref}>
+    <div style={{ ...style, background: 'var(--str-video__background-color5)', borderRadius: 'inherit', aspectRatio: '4 / 3', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', }} ref={ref}>
       <div style={{ background: 'var(--str-video__primary-color)', borderRadius: 'var(--str-video__border-radius-circle)', fontSize: '32px', fontWeight: '600', textTransform: 'uppercase', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100px', height: '100px', }}>
         {initials}
       </div>
@@ -187,18 +180,30 @@ const VideoPlaceholder = forwardRef(function ({ participant, style }, ref) {
 
 function ParticipantViewUI() {
   const { participant } = useParticipantViewContext()
-  const { publishedTracks } = participant
+  const { publishedTracks, name, userId } = participant
 
   const hasAudio = publishedTracks.includes(SfuModels.TrackType.AUDIO)
   const hasVideo = publishedTracks.includes(SfuModels.TrackType.VIDEO)
 
   return (
-    <div style={{ position: 'absolute', left: '0', bottom: '0' }}>
+    <div style={{
+      position: 'absolute',
+      left: '0',
+      bottom: '0',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 'var(--str-video__spacing-sm)',
+      borderRadius: '0 var(--str-video__border-radius-xs) 0 var(--str-video__border-radius-sm)',
+      backgroundColor: 'var(--str-video__background-color4)',
+      fontSize: 'var(--str-video__font-size-sm)',
+      padding: '4px 6px'
+    }}>
+      <span>{name || userId}</span>
       {!hasAudio && (
-        <MicOffIcon fontSize='small' />
+        <MicOffIcon style={{ fontSize: '1rem' }} />
       )}
       {!hasVideo && (
-        <VideocamOffIcon fontSize='small' />
+        <VideocamOffIcon style={{ fontSize: '1rem' }} />
       )}
     </div>
   )
