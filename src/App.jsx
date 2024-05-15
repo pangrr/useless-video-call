@@ -18,6 +18,7 @@ const apiKey = 'mmhfdzb5evj2'
 function App() {
   const [client, setClient] = useState()
   const [call, setCall] = useState()
+  const [userName, setUserName] = useState('')
   const [userId, setUserId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -45,7 +46,7 @@ function App() {
           </StreamTheme>
           :
           <Stack style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-            <TextField value={userId} disabled={loading} onChange={(e) => setUserId(e.target.value)} style={{ width: '10rem' }} label='Your Name' name='userId' variant='outlined' />
+            <TextField value={userName} disabled={loading} onChange={(e) => setUserNameUserId(e.target.value)} style={{ width: '10rem' }} label='Your Name' name='userId' variant='outlined' />
             <Button disabled={!userId || loading} onClick={startCall} variant='contained' style={{ width: '10rem' }}>start call</Button>
             {loading && (
               <CircularProgress size={24} />
@@ -53,41 +54,43 @@ function App() {
           </Stack>
         }
       </div>
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')} anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
         <Alert severity='error' variant='filled' sx={{ width: '100%' }}>{error}</Alert>
       </Snackbar>
     </>
-
   )
 
   async function startCall() {
     setLoading(true)
-    const user = { id: userId }
+    const user = { id: userId, name: userName }
+    const tokenProvider = async () => {
+      const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
+        new URLSearchParams({
+          api_key: apiKey,
+          user_id: userName
+        })
+      )
+      const { token } = await res.json()
+      return token
+    }
+    const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
+    const _call = _client.call('default', callId)
+    await _call.camera.disable()
+    await _call.microphone.disable()
     try {
-      const tokenProvider = async () => {
-        const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
-          new URLSearchParams({
-            api_key: apiKey,
-            user_id: userId
-          })
-        )
-        const { token } = await res.json()
-        return token
-      }
-      const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
-      const _call = _client.call('default', callId)
-      await _call.camera.disable()
-      await _call.microphone.disable()
       await _call.join({ create: true })
-
       setClient(_client)
       setCall(_call)
     } catch (e) {
-      console.error(e)
-      setError(e.message)
+      setError('Error, see console for detail')
     } finally {
       setLoading(false)
     }
+  }
+
+  function setUserNameUserId(inputName) {
+    setUserName(inputName)
+    setUserId(inputName.replace(/[^0-9a-z@\-_]/g, ''))
   }
 
   async function hangup() {
@@ -98,8 +101,7 @@ function App() {
         await client.disconnectUser()
         setClient(undefined)
       } catch (e) {
-        console.error(e)
-        setError(e.message)
+        setError('Error, see console for detail')
       }
     }
   }
