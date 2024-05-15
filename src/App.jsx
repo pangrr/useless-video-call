@@ -1,5 +1,5 @@
 import { useEffect, useState, forwardRef } from 'react'
-import { Stack, AppBar, Toolbar, Button, TextField, IconButton } from '@mui/material'
+import { Stack, AppBar, Toolbar, Button, TextField, IconButton, CircularProgress, Alert, Snackbar } from '@mui/material'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import MicIcon from '@mui/icons-material/Mic'
@@ -19,66 +19,88 @@ function App() {
   const [client, setClient] = useState()
   const [call, setCall] = useState()
   const [userId, setUserId] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => hangup, [])
 
   return (
-    <div style={{ position: 'fixed', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
-      <AppBar color='darkerBackground' enableColorOnDark sx={{ position: 'relative' }}>
-        <Toolbar variant='dense'>
-          <Button onClick={() => window.open('https://github.com/pangrr/call', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
-        </Toolbar>
-      </AppBar>
-      {call ?
-        <StreamTheme style={{ width: '100%', height: '100%' }}>
-          <StreamVideo client={client}>
-            <StreamCall call={call}>
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-                <CallView />
-                <Controls onHangup={hangup} />
-              </div>
-            </StreamCall>
-          </StreamVideo>
-        </StreamTheme>
-        :
-        <Stack style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-          <TextField value={userId} onChange={(e) => setUserId(e.target.value)} style={{ width: '10rem' }} label='Your Name' name='userId' variant='outlined' />
-          <Button disabled={!userId} onClick={startCall} variant='contained' style={{ width: '10rem' }}>start call</Button>
-        </Stack>
-      }
-    </div>
+    <>
+      <div style={{ position: 'fixed', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
+        <AppBar color='darkerBackground' enableColorOnDark sx={{ position: 'relative' }}>
+          <Toolbar variant='dense'>
+            <Button onClick={() => window.open('https://github.com/pangrr/call', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
+          </Toolbar>
+        </AppBar>
+        {call ?
+          <StreamTheme style={{ width: '100%', height: '100%' }}>
+            <StreamVideo client={client}>
+              <StreamCall call={call}>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+                  <CallView />
+                  <Controls onHangup={hangup} />
+                </div>
+              </StreamCall>
+            </StreamVideo>
+          </StreamTheme>
+          :
+          <Stack style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+            <TextField value={userId} disabled={loading} onChange={(e) => setUserId(e.target.value)} style={{ width: '10rem' }} label='Your Name' name='userId' variant='outlined' />
+            <Button disabled={!userId || loading} onClick={startCall} variant='contained' style={{ width: '10rem' }}>start call</Button>
+            {loading && (
+              <CircularProgress size={24} />
+            )}
+          </Stack>
+        }
+      </div>
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
+        <Alert severity='error' variant='filled' sx={{ width: '100%' }}>{error}</Alert>
+      </Snackbar>
+    </>
+
   )
 
   async function startCall() {
+    setLoading(true)
     const user = { id: userId }
-    const tokenProvider = async () => {
-      const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
-        new URLSearchParams({
-          api_key: apiKey,
-          user_id: userId
-        })
-      )
-      const { token } = await res.json()
-      return token
-    }
-    const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
-    setClient(_client)
+    try {
+      const tokenProvider = async () => {
+        const res = await fetch('https://pronto.getstream.io/api/auth/create-token?' +
+          new URLSearchParams({
+            api_key: apiKey,
+            user_id: userId
+          })
+        )
+        const { token } = await res.json()
+        return token
+      }
+      const _client = new StreamVideoClient({ apiKey, user, tokenProvider })
+      const _call = _client.call('default', callId)
+      await _call.camera.disable()
+      await _call.microphone.disable()
+      await _call.join({ create: true })
 
-    const _call = _client.call('default', callId)
-    await _call.camera.disable()
-    await _call.microphone.disable()
-    await _call.join({ create: true }).catch((e) => console.error(`Failed to join the call`, e))
-    setCall(_call)
+      setClient(_client)
+      setCall(_call)
+    } catch (e) {
+      console.error(e)
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function hangup() {
-    if (call) {
-      call.leave().catch((err) => console.error(`Failed to leave the call`, err))
-      setCall(undefined)
-    }
-    if (client) {
-      client.disconnectUser()
-      setClient(undefined)
+  async function hangup() {
+    if (call && client) {
+      try {
+        await call.leave()
+        setCall(undefined)
+        await client.disconnectUser()
+        setClient(undefined)
+      } catch (e) {
+        console.error(e)
+        setError(e.message)
+      }
     }
   }
 }
