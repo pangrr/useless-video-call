@@ -30,7 +30,7 @@ function App() {
       <div style={{ position: 'fixed', height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         <AppBar color='darkerBackground' enableColorOnDark sx={{ position: 'relative' }}>
           <Toolbar variant='dense'>
-            <Button onClick={() => window.open('https://github.com/pangrr/call', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
+            <Button onClick={() => window.open('https://github.com/pangrr/useless-video-call', '_blank')} startIcon={<GitHubIcon />} color='inherit'>source code</Button>
           </Toolbar>
         </AppBar>
         {call ?
