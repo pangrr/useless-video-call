@@ -1,8 +1,7 @@
 {
-  "name": "call",
+  "name": "useless-video-call",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://pangrr.github.io/call/",
   "type": "module",
   "scripts": {
     "dev": "vite",
